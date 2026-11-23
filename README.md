@@ -55,3 +55,11 @@ Consulta [docs/DESPLIEGUE_AZURE_FOR_STUDENTS.md](docs/DESPLIEGUE_AZURE_FOR_STUDE
 `SubscriptionId` y `TenantId` son identificadores GUID de tu cuenta, no códigos universales. `scripts/Connect-RedSolidaria-Azure.ps1` selecciona la suscripción habilitada y guarda el registro local. `scripts/Test-RedSolidaria-Azure.ps1` es una comprobación de solo lectura; no crea recursos.
 
 Si `.git/redsolidaria-publish-state.json` falta, `scripts/Repair-RedSolidariaPublishState.ps1` reconstruye el estado de Day1 solo después de comprobar que GitHub tiene PR #1 y #2 fusionadas. No repitas Day1.
+
+## Produccion activa
+
+- URL: https://redsolidaria-jbranez.chilecentral.cloudapp.azure.com
+- VM `vm-redsolidaria`, region `chilecentral`, `Standard_B2as_v2` (2 vCPU/8 GiB), Ubuntu 22.04.
+- Angular, FastAPI, SQL Server 2022 y Caddy estan activos en Docker Compose. HTTPS validado con TLS publico.
+- Verificados desde fuera: frontend 200, `/health/db` 200, login 200 y TCP/1433 cerrado.
+- Revisar [PROGRESS.md](../PROGRESS.md), [NEXT_STEPS.md](../NEXT_STEPS.md) y [DESPLIEGUE_AZURE_FOR_STUDENTS.md](DESPLIEGUE_AZURE_FOR_STUDENTS.md) para estado y operacion.
