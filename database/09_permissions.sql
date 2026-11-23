@@ -28,6 +28,8 @@ GRANT EXECUTE ON SCHEMA::dbo TO [$(DB_APP_USER)];
 DENY  SELECT, INSERT, UPDATE, DELETE ON SCHEMA::dbo TO [$(DB_APP_USER)];
 -- DENY CONTROL incluye implícitamente EXECUTE y prevalecería sobre el GRANT
 -- anterior. Se deniega ALTER/REFERENCES directamente, pero no CONTROL de schema.
+REVOKE CONTROL ON SCHEMA::dbo FROM [$(DB_APP_USER)];
+GRANT EXECUTE ON SCHEMA::dbo TO [$(DB_APP_USER)];
 DENY  ALTER, REFERENCES ON SCHEMA::dbo TO [$(DB_APP_USER)];
 GO
 
