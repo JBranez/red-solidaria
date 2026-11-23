@@ -26,7 +26,9 @@ GO
 
 GRANT EXECUTE ON SCHEMA::dbo TO [$(DB_APP_USER)];
 DENY  SELECT, INSERT, UPDATE, DELETE ON SCHEMA::dbo TO [$(DB_APP_USER)];
-DENY  ALTER, CONTROL, REFERENCES ON SCHEMA::dbo TO [$(DB_APP_USER)];
+-- DENY CONTROL incluye implícitamente EXECUTE y prevalecería sobre el GRANT
+-- anterior. Se deniega ALTER/REFERENCES directamente, pero no CONTROL de schema.
+DENY  ALTER, REFERENCES ON SCHEMA::dbo TO [$(DB_APP_USER)];
 GO
 
 IF NOT EXISTS (SELECT 1 FROM dbo.schema_migracion WHERE version = N'2.0.2')
