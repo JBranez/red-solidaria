@@ -1,0 +1,29 @@
+id_donante,nombre,tipo,correo,fecha_registro
+1,Elena Torres Medina,Persona,elena.torres18@correo.com,2025-11-28
+2,Diego Lara Gutiérrez,Persona,diego.lara11@correo.com,2025-05-03
+3,Sebastián Cárdenas Campos,Persona,sebastian.cardenas17@correo.com,2025-04-02
+4,Ferretería El Tornillo,Empresa,contacto@ferreteriaeltornillo.com,2025-05-17
+5,Adrián Huamán Cárdenas,Persona,adrian.huaman14@correo.com,2025-04-30
+6,Joaquín Navarro Medina,Persona,joaquin.navarro24@correo.com,2025-10-02
+7,Santiago Lara Quispe,Persona,santiago.lara27@correo.com,2025-07-17
+8,Ana Torres Rodríguez,Persona,ana.torres9@correo.com,2025-04-14
+9,Transportes Rápido Sur,Empresa,contacto@transportesrapidosur.com,2025-04-18
+10,Carlos Campos Ríos,Persona,carlos.campos26@correo.com,2025-11-10
+11,Farmacia Vida,Empresa,contacto@farmaciavida.com,2025-09-19
+12,Textiles Norte,Empresa,contacto@textilesnorte.com,2025-04-07
+13,Carmen Gutiérrez Ortiz,Persona,carmen.gutierrez16@correo.com,2025-06-05
+14,Luis Ramos Córdova,Persona,luis.ramos20@correo.com,2025-06-01
+15,Clínica Salud Plena,Empresa,contacto@clinicasaludplena.com,2025-09-04
+16,Librería Horizonte,Empresa,contacto@libreriahorizonte.com,2025-03-25
+17,Supermercado Buen Precio,Empresa,contacto@supermercadobuenprecio.com,2025-11-30
+18,Santiago Rodríguez Soto,Persona,santiago.rodriguez28@correo.com,2025-08-06
+19,Camila Vega Cárdenas,Persona,camila.vega25@correo.com,2025-12-19
+20,Panadería La Espiga,Empresa,contacto@panaderialaespiga.com,2025-08-13
+21,Carmen Rodríguez Gutiérrez,Persona,carmen.rodriguez12@correo.com,2025-09-20
+22,Ximena Rodríguez Cárdenas,Persona,ximena.rodriguez13@correo.com,2025-05-08
+23,Sofía Herrera Chávez,Persona,sofia.herrera23@correo.com,2025-05-24
+24,Adrián Quispe Ramos,Persona,adrian.quispe10@correo.com,2025-04-16
+25,Pedro Lara Delgado,Persona,pedro.lara15@correo.com,2025-06-01
+26,Carlos Soto Paredes,Persona,carlos.soto22@correo.com,2025-07-26
+27,Carlos Paredes Gutiérrez,Persona,carlos.paredes19@correo.com,2025-10-19
+28,Camila Gutiérrez Castillo,Persona,camila.gutierrez21@correo.com,2025-11-24
