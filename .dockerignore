@@ -1,0 +1,20 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+**/.venv
+**/node_modules
+**/dist
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+.secrets
+# Solo se incluye la CA pública que valida el certificado de SQL Server.
+deploy/certs/*
+!deploy/certs/ca.crt
+**/*.pem
+**/*.key
+**/.secrets
+**/.ssh
+frontend/src/theme
