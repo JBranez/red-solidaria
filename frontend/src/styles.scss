@@ -1,0 +1,147 @@
+/* =====================================================================
+   Red Solidaria · estilos globales
+   Base visual:  Bootswatch "Zephyr" (Bootstrap 5.3.8, MIT, Thomas Park)
+   Estructura:   ejemplos oficiales "Dashboard" y "Sign-in" de Bootstrap (MIT, The Bootstrap Authors)
+   Sistema de color: los tres colores del diagrama lógico del propio proyecto
+        Quienes donan (verde azulado)  ·  Campañas de ayuda (azul)  ·  Quienes ayudan y reciben (naranja)
+   ===================================================================== */
+:root {
+  --rs-dar: #0f766e;
+  --rs-dar-soft: #e3f3f1;
+  --rs-campana: #3459e6;
+  --rs-campana-soft: #e8edfd;
+  --rs-recibe: #c2410c;
+  --rs-recibe-soft: #fdeee6;
+  --rs-ink: #1b2430;
+  --rs-muted: #667085;
+  --rs-line: #e4e7ec;
+  --rs-page: #f4f6f9;
+  --bs-body-font-family: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --bs-body-bg: var(--rs-page);
+  --bs-body-color: #344054;
+  --bs-heading-color: var(--rs-ink);
+  --bs-border-color: var(--rs-line);
+  /* Zephyr define "secondary" como BLANCO. En esta aplicación significa "texto/acción secundaria": gris neutro. */
+  --bs-secondary: #667085;
+  --bs-secondary-rgb: 102, 112, 133;
+  --bs-secondary-color: #667085;
+  --bs-secondary-text-emphasis: #475467;
+  --bs-secondary-bg-subtle: #f2f4f7;
+  --bs-secondary-border-subtle: #e4e7ec;
+}
+
+.btn-outline-secondary { --bs-btn-color: #475467; --bs-btn-border-color: #d0d5dd; --bs-btn-hover-color: var(--rs-ink); --bs-btn-hover-bg: #f2f4f7; --bs-btn-hover-border-color: #d0d5dd; --bs-btn-active-color: var(--rs-ink); --bs-btn-active-bg: #e4e7ec; --bs-btn-active-border-color: #d0d5dd; --bs-btn-disabled-color: #98a2b3; --bs-btn-disabled-border-color: #e4e7ec; }
+.btn-secondary { --bs-btn-color: #fff; --bs-btn-bg: #667085; --bs-btn-border-color: #667085; --bs-btn-hover-bg: #475467; --bs-btn-hover-border-color: #475467; --bs-btn-hover-color: #fff; }
+.btn-outline-warning { --bs-btn-color: #93570a; --bs-btn-border-color: #e8a33d; --bs-btn-hover-bg: #fdf0d5; --bs-btn-hover-color: #6f4208; --bs-btn-hover-border-color: #e8a33d; --bs-btn-active-bg: #f9e2b0; --bs-btn-active-color: #6f4208; }
+.list-group-item-action { --bs-list-group-action-color: var(--bs-body-color); --bs-list-group-action-hover-color: var(--rs-ink); }
+
+html { scroll-behavior: smooth; }
+body { -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4, h5, h6 { letter-spacing: -0.015em; font-weight: 650; }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--rs-campana) 55%, white); outline-offset: 2px; border-radius: 4px; }
+
+/* ---- tarjetas ---- */
+.card { --bs-card-border-color: var(--rs-line); --bs-card-cap-bg: #fff; box-shadow: 0 1px 2px rgb(16 24 40 / 0.04); border-radius: 0.75rem; }
+.card-header { font-weight: 600; color: var(--rs-ink); }
+
+/* ---- barra superior y navegación lateral (ejemplo Dashboard de Bootstrap) ---- */
+.rs-topbar { background: #111827 !important; }
+.rs-topbar .navbar-brand { background: rgb(0 0 0 / 0.28); box-shadow: inset -1px 0 0 rgb(255 255 255 / 0.06); padding: 0.7rem 1rem; font-weight: 650; letter-spacing: -0.01em; }
+.rs-brand-mark { display: inline-grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 0.45rem; background: #fff; color: #111827; margin-right: 0.55rem; font-size: 1rem; }
+
+.rs-sidebar { background: #fff; border-right: 1px solid var(--rs-line); }
+@media (min-width: 768px) {
+  .rs-sidebar .offcanvas-md { position: sticky; top: 3.1rem; height: calc(100vh - 3.1rem); overflow-y: auto; }
+}
+.rs-sidebar .nav-link { font-size: 0.875rem; font-weight: 500; color: #475467; border-radius: 0.5rem; margin: 0 0.6rem; padding: 0.42rem 0.7rem; }
+.rs-sidebar .nav-link:hover { background: #f2f4f7; color: var(--rs-ink); }
+.rs-sidebar .nav-link.active { background: var(--rs-campana-soft); color: var(--rs-campana); }
+.rs-sidebar .nav-link .bi { font-size: 1.02rem; width: 1.1rem; text-align: center; }
+.rs-sidebar-heading { font-size: 0.7rem; font-weight: 650; letter-spacing: 0.04em; color: var(--rs-muted); padding: 0 1.3rem; margin: 1.1rem 0 0.3rem; display: flex; align-items: center; gap: 0.45rem; }
+.rs-sidebar-heading::before { content: ''; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--grupo, var(--rs-line)); }
+.grupo-dar { --grupo: var(--rs-dar); }
+.grupo-campana { --grupo: var(--rs-campana); }
+.grupo-recibe { --grupo: var(--rs-recibe); }
+.grupo-admin { --grupo: #667085; }
+.rs-main { min-height: calc(100vh - 3.1rem); }
+.rs-backdrop { position: fixed; inset: 0; background: rgb(16 24 40 / 0.45); z-index: 1039; }
+
+/* ---- página y encabezados ---- */
+.rs-page-title { font-size: 1.55rem; margin: 0; }
+.rs-page-sub { color: var(--rs-muted); margin: 0.15rem 0 0; font-size: 0.93rem; }
+
+/* ---- indicadores ---- */
+.rs-kpi { position: relative; padding: 1rem 1.1rem 1rem 1.25rem; height: 100%; }
+.rs-kpi::before { content: ''; position: absolute; left: 0; top: 0.9rem; bottom: 0.9rem; width: 4px; border-radius: 0 4px 4px 0; background: var(--acento, var(--rs-line)); }
+.rs-kpi .rs-kpi-label { font-size: 0.78rem; color: var(--rs-muted); font-weight: 550; display: flex; align-items: center; gap: 0.4rem; }
+.rs-kpi .rs-kpi-value { font-size: 1.65rem; font-weight: 700; color: var(--rs-ink); letter-spacing: -0.03em; line-height: 1.15; margin-top: 0.2rem; font-variant-numeric: tabular-nums; }
+.rs-kpi .rs-kpi-hint { font-size: 0.78rem; color: var(--rs-muted); margin-top: 0.15rem; }
+.acento-dar { --acento: var(--rs-dar); }
+.acento-campana { --acento: var(--rs-campana); }
+.acento-recibe { --acento: var(--rs-recibe); }
+.acento-alerta { --acento: #d97706; }
+.acento-neutro { --acento: #98a2b3; }
+.text-dar { color: var(--rs-dar) !important; }
+.text-campana { color: var(--rs-campana) !important; }
+.text-recibe { color: var(--rs-recibe) !important; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ---- tablas ---- */
+.rs-table { --bs-table-bg: transparent; font-size: 0.89rem; margin: 0; }
+.rs-table thead th { font-size: 0.74rem; font-weight: 600; color: var(--rs-muted); background: #f9fafb; border-bottom: 1px solid var(--rs-line); white-space: nowrap; padding: 0.65rem 0.9rem; }
+.rs-table td { padding: 0.7rem 0.9rem; vertical-align: middle; border-color: #eef0f3; }
+.rs-table tbody tr:hover > * { background: #fafbfc; }
+.rs-table .btn-sm { --bs-btn-padding-y: 0.2rem; --bs-btn-padding-x: 0.5rem; }
+.rs-clickable { cursor: pointer; }
+.table-responsive { border-radius: 0 0 0.75rem 0.75rem; }
+
+/* ---- estados vacíos / carga ---- */
+.rs-empty { text-align: center; padding: 3rem 1rem; color: var(--rs-muted); }
+.rs-empty .bi { font-size: 2.2rem; color: #c3c9d4; display: block; margin-bottom: 0.6rem; }
+.rs-skeleton { background: linear-gradient(90deg, #eef0f3 25%, #f6f7f9 37%, #eef0f3 63%); background-size: 400% 100%; animation: rs-shimmer 1.3s ease infinite; border-radius: 0.4rem; height: 1rem; }
+@keyframes rs-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+@media (prefers-reduced-motion: reduce) { .rs-skeleton { animation: none; } html { scroll-behavior: auto; } }
+
+/* ---- formularios ---- */
+.form-label { font-weight: 550; font-size: 0.85rem; color: var(--rs-ink); margin-bottom: 0.3rem; }
+.rs-field.has-error .form-control, .rs-field.has-error .form-select { border-color: var(--bs-form-invalid-border-color); }
+.rs-field-error { color: var(--bs-form-invalid-color); font-size: 0.8rem; margin-top: 0.25rem; }
+.rs-hint { color: var(--rs-muted); font-size: 0.78rem; margin-top: 0.25rem; }
+
+/* ---- modal propio (sin JavaScript de Bootstrap) ---- */
+.rs-modal-backdrop { position: fixed; inset: 0; background: rgb(16 24 40 / 0.55); z-index: 1050; }
+.modal.rs-modal { display: block; z-index: 1055; overflow-y: auto; }
+.modal.rs-modal .modal-content { border: 0; border-radius: 0.9rem; box-shadow: 0 24px 60px rgb(16 24 40 / 0.28); }
+.modal-open-rs { overflow: hidden; }
+
+/* ---- avisos ---- */
+.rs-toasts { position: fixed; right: 1rem; bottom: 1rem; z-index: 1100; display: grid; gap: 0.6rem; width: min(24rem, calc(100vw - 2rem)); }
+.rs-toast { background: #fff; border: 1px solid var(--rs-line); border-left: 4px solid var(--c, var(--rs-campana)); border-radius: 0.6rem; padding: 0.7rem 0.9rem; box-shadow: 0 10px 30px rgb(16 24 40 / 0.16); display: flex; gap: 0.6rem; align-items: flex-start; animation: rs-in 0.2s ease; }
+.rs-toast.ok { --c: var(--rs-dar); } .rs-toast.error { --c: #d92d20; } .rs-toast.aviso { --c: #d97706; }
+@keyframes rs-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ---- gráficos ---- */
+.rs-chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.rs-chart-svg text { font-size: 10px; fill: var(--rs-muted); font-family: inherit; }
+.rs-barlist { display: grid; gap: 0.7rem; }
+.rs-barlist .rs-bar-row { display: grid; grid-template-columns: minmax(6rem, 28%) 1fr auto; gap: 0.7rem; align-items: center; font-size: 0.85rem; }
+.rs-bar-track { height: 0.55rem; background: #eef0f3; border-radius: 99px; overflow: hidden; }
+.rs-bar-fill { height: 100%; border-radius: 99px; background: var(--rs-campana); transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* ---- constancia imprimible ---- */
+.rs-constancia { background: #fff; border: 2px solid var(--rs-ink); border-radius: 0.5rem; padding: 1.6rem; }
+@media print {
+  body.rs-imprimiendo * { visibility: hidden !important; }
+  body.rs-imprimiendo .rs-constancia, body.rs-imprimiendo .rs-constancia * { visibility: visible !important; }
+  body.rs-imprimiendo .rs-constancia { position: fixed; left: 0; top: 0; width: 100%; border-width: 1px; }
+}
+
+/* ---- portal público ---- */
+.rs-hero { background: #111827; color: #e5e7eb; position: relative; overflow: hidden; }
+.rs-hero h1 { color: #fff; }
+.rs-hero::after { content: ''; position: absolute; inset: auto -10% -60% 40%; height: 120%; background: radial-gradient(closest-side, rgb(47 179 128 / 0.28), transparent); pointer-events: none; }
+.rs-cifra { font-size: clamp(1.5rem, 2.6vw, 2.3rem); font-weight: 750; color: #fff; letter-spacing: -0.035em; line-height: 1; font-variant-numeric: tabular-nums; }
+.rs-cifra-label { color: #9ca3af; font-size: 0.82rem; margin-top: 0.35rem; }
+
+/* ---- acceso (ejemplo Sign-in de Bootstrap) ---- */
+.form-signin { width: 100%; max-width: 24rem; padding: 1rem; }
