@@ -294,3 +294,25 @@ El script exige escribir `ELIMINAR rg-redsolidaria`.
 - Azure CLI: <https://learn.microsoft.com/cli/azure/account> y <https://learn.microsoft.com/cli/azure/vm>
 - Cuotas de VM: <https://learn.microsoft.com/azure/virtual-machines/quotas>
 - SQL Server en Linux/containers x64: <https://learn.microsoft.com/sql/linux/sql-server-linux-release-notes-2022>
+
+## Produccion Azure verificada
+
+La instancia publica activa se encuentra en `https://redsolidaria-jbranez.chilecentral.cloudapp.azure.com`.
+
+- VM `vm-redsolidaria`, Ubuntu Server 22.04, SKU `Standard_B2as_v2` (2 vCPU, 8 GiB), region `chilecentral`; IP estatica `68.211.145.55`.
+- Docker Compose: Angular servido por Nginx, FastAPI, SQL Server 2022 y Caddy. El volumen `sqlserver_data` conserva la base; Caddy conserva certificados y estado en volumenes persistentes.
+- Caddy obtuvo certificado publico de Let's Encrypt. Validaciones ejecutadas desde Internet: frontend HTTPS 200 con cadena TLS valida y `/health/db` HTTPS 200. El login `admin` devolvio 200 y token.
+- SQL Server no se expone publicamente: el binding del host es `127.0.0.1:1433`; la conexion externa al puerto 1433 falla. NSG: SSH limitado a `38.211.62.88/32`, HTTP/HTTPS publicos.
+- La cuenta de aplicacion solo necesita `EXECUTE` en `dbo`. `DENY CONTROL` anulaba ese permiso; la correccion fusionada en PR #6 revoca el `DENY` heredado y mantiene denegados SELECT/INSERT/UPDATE/DELETE.
+- Secretos productivos estan en `/opt/red-solidaria/.env`, propiedad de `azureuser`, modo `600`. No estan en GitHub ni se deben copiar a archivos versionados.
+
+Comandos operativos (SSH):
+
+```bash
+cd /opt/red-solidaria
+docker compose ps
+docker compose logs --tail=100 api sqlserver caddy
+curl -fsS https://redsolidaria-jbranez.chilecentral.cloudapp.azure.com/health/db
+```
+
+Para desplegar una publicacion nueva, actualizar `main` y ejecutar `bash deploy/deploy-on-server.sh`. La imagen `db-init` debe reconstruirse si cambian scripts SQL, para que incorpore el SQL copiado durante el build.
