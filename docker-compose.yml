@@ -1,0 +1,124 @@
+name: red-solidaria
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    container_name: red-solidaria-sql
+    environment:
+      ACCEPT_EULA: "${ACCEPT_EULA:-Y}"
+      MSSQL_PID: "${MSSQL_PID:-Express}"
+      MSSQL_MEMORY_LIMIT_MB: "${MSSQL_MEMORY_LIMIT_MB:-3072}"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:?Define MSSQL_SA_PASSWORD en .env}"
+    mem_limit: "${MSSQL_CONTAINER_MEMORY_LIMIT:-4g}"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./deploy/sqlserver/mssql.conf:/var/opt/mssql/mssql.conf:ro
+      - ./deploy/certs:/var/opt/mssql/certs:ro
+    # Solo accesible desde el propio host o mediante un túnel SSH.
+    ports:
+      - "127.0.0.1:1433:1433"
+    networks:
+      - backend
+    restart: unless-stopped
+
+  db-init:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: red-solidaria-backend:local
+    container_name: red-solidaria-db-init
+    command: ["sh", "-c", "python -m scripts.wait_for_sql && python -m scripts.init_db && python -m scripts.seed"]
+    environment:
+      APP_ENV: development
+      DB_SERVER: sqlserver
+      DB_PORT: "1433"
+      DB_NAME: "${DB_NAME:-RedSolidaria}"
+      DB_DRIVER: "ODBC Driver 18 for SQL Server"
+      DB_TRUST_SERVER_CERTIFICATE: "no"
+      DB_APP_USER: "${DB_APP_USER:-redsolidaria_app}"
+      DB_APP_PASSWORD: "${DB_APP_PASSWORD:?Define DB_APP_PASSWORD en .env}"
+      MSSQL_SA_USER: sa
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:?Define MSSQL_SA_PASSWORD en .env}"
+      SEED_ADMIN_USERNAME: "${SEED_ADMIN_USERNAME:-admin}"
+      SEED_ADMIN_PASSWORD: "${SEED_ADMIN_PASSWORD:?Define SEED_ADMIN_PASSWORD en .env}"
+      SEED_DEMO_PASSWORD: "${SEED_DEMO_PASSWORD:?Define SEED_DEMO_PASSWORD en .env}"
+      DB_WAIT_ATTEMPTS: "90"
+      DB_WAIT_SECONDS: "5"
+    depends_on:
+      - sqlserver
+    networks:
+      - backend
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: red-solidaria-backend:local
+    container_name: red-solidaria-api
+    environment:
+      APP_ENV: production
+      DB_SERVER: sqlserver
+      DB_PORT: "1433"
+      DB_NAME: "${DB_NAME:-RedSolidaria}"
+      DB_DRIVER: "ODBC Driver 18 for SQL Server"
+      DB_TRUST_SERVER_CERTIFICATE: "no"
+      DB_APP_USER: "${DB_APP_USER:-redsolidaria_app}"
+      DB_APP_PASSWORD: "${DB_APP_PASSWORD:?Define DB_APP_PASSWORD en .env}"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY:?Define JWT_SECRET_KEY en .env}"
+      ACCESS_TOKEN_EXPIRE_MINUTES: "${ACCESS_TOKEN_EXPIRE_MINUTES:-60}"
+      CORS_ORIGINS: "${CORS_ORIGINS:?Define CORS_ORIGINS en .env}"
+    expose:
+      - "8000"
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    networks:
+      - backend
+      - edge
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: red-solidaria-frontend:local
+    container_name: red-solidaria-frontend
+    expose:
+      - "80"
+    networks:
+      - edge
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: red-solidaria-proxy
+    environment:
+      DOMAIN: "${DOMAIN:?Define DOMAIN en .env}"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    networks:
+      - edge
+    restart: unless-stopped
+
+networks:
+  edge:
+    driver: bridge
+  backend:
+    driver: bridge
+
+volumes:
+  sqlserver_data:
+  caddy_data:
+  caddy_config:

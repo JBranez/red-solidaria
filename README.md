@@ -46,3 +46,12 @@ La solución incluye `docker-compose.yml`: SQL Server 2022, inicialización auto
 
 ## Límites honestos
 Los procedimientos SQL se validaron por sintaxis, coherencia y contrato, **pero no se ejecutaron en una instancia de SQL Server** (ver [PRUEBAS.md](docs/PRUEBAS.md)); los scripts `.ps1` no se corrieron en Windows. Inventario/artículos, presupuesto por partidas, notificaciones por correo y MFA están en el *roadmap*, no implementados.
+
+
+## Despliegue Azure for Students
+
+Consulta [docs/DESPLIEGUE_AZURE_FOR_STUDENTS.md](docs/DESPLIEGUE_AZURE_FOR_STUDENTS.md) para el procedimiento completo de PowerShell: iniciar sesión en Azure, obtener los identificadores propios de la suscripción, validar regiones/cuotas, aprovisionar Ubuntu x64, desplegar SQL Server 2022 en Docker y verificar la URL HTTPS.
+
+`SubscriptionId` y `TenantId` son identificadores GUID de tu cuenta, no códigos universales. `scripts/Connect-RedSolidaria-Azure.ps1` selecciona la suscripción habilitada y guarda el registro local. `scripts/Test-RedSolidaria-Azure.ps1` es una comprobación de solo lectura; no crea recursos.
+
+Si `.git/redsolidaria-publish-state.json` falta, `scripts/Repair-RedSolidariaPublishState.ps1` reconstruye el estado de Day1 solo después de comprobar que GitHub tiene PR #1 y #2 fusionadas. No repitas Day1.
