@@ -1,3 +1,6 @@
+kRf74HDzQ3AyyTr14fSqwoftZrEJ6ZpcGBNXGP_NNfvs3_EtaA1!
+
+
 # Red Solidaria
 
 Plataforma web para gestionar **donaciones, campañas, hogares beneficiarios, voluntarios y entregas** de ayuda social: de quien dona a quien recibe, con trazabilidad y rendición de cuentas.
