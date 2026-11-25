@@ -84,4 +84,69 @@ El script:
 4. Comprueba la huella SSH obtenida por Azure antes de aceptar el servidor.
 5. Abre el tunel `127.0.0.1:14333` hacia el puerto SQL privado de la VM y lanza SSMS con `RedSolidaria` y `sa` preseleccionados. Escribe la contrasena SQL en SSMS; el script no la solicita ni la almacena.
 
-No compartas ni subas la llave privada `$HOME\.ssh\redsolidaria_university` al repositorio. La llave publica de esa PC permanece autorizada en la VM para futuras conexiones desde esa computadora. Manten abierto el tunel mientras uses SSMS. El script cambia el origen autorizado de SSH a la IP actual; SQL Server 1433 sigue cerrado al publico.
+No compartas ni subas la llave privada `$HOME\.ssh\redsolidaria_university` al repositorio. La llave pública de esa PC permanece autorizada en la VM para futuras conexiones desde esa computadora. Mantén abierto el túnel mientras uses SSMS. El script cambia el origen autorizado de SSH a la IP actual; SQL Server 1433 sigue cerrado al público.
+
+### Inicio desde una computadora nueva (copiar y pegar en PowerShell)
+
+Este bloque descarga el código fuente completo de `main` desde el GitHub público (ZIP, sin historial Git), comprueba las versiones de PowerShell, Azure CLI, Windows OpenSSH y SSMS, y ejecuta el conector. No instala software por su cuenta: si falta una dependencia, muestra el requisito y se detiene. Instálala desde Microsoft/Windows y vuelve a pegar el bloque. Azure CLI puede abrir el inicio de sesión interactivo y solicitar MFA.
+
+```powershell
+$ErrorActionPreference = 'Stop'
+if ($PSVersionTable.PSVersion -lt [version]'5.1') {
+    throw "Se requiere Windows PowerShell 5.1 o posterior."
+}
+
+$az = Get-Command az -ErrorAction SilentlyContinue
+$ssh = Get-Command ssh.exe -ErrorAction SilentlyContinue
+$keygen = Get-Command ssh-keygen.exe -ErrorAction SilentlyContinue
+$ssmsCandidates = @(
+    "$env:ProgramFiles\Microsoft SQL Server Management Studio 22\Release\Common7\IDE\SSMS.exe",
+    "$env:ProgramFiles\Microsoft SQL Server Management Studio 21\Release\Common7\IDE\SSMS.exe",
+    "$env:ProgramFiles\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe"
+)
+$ssms = $ssmsCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+
+$missing = @()
+if (!$az) { $missing += 'Azure CLI (Microsoft Store/winget: Microsoft.AzureCLI)' }
+if (!$ssh -or !$keygen) { $missing += 'Windows OpenSSH Client (Optional Features de Windows)' }
+if (!$ssms) { $missing += 'SSMS 20 o posterior (instalador oficial de Microsoft)' }
+if ($missing.Count) {
+    Write-Host 'Faltan estos componentes:' -ForegroundColor Yellow
+    $missing | ForEach-Object { Write-Host " - $_" }
+    throw 'Instala los componentes indicados y vuelve a ejecutar este bloque.'
+}
+
+$azVersionData = (& $az.Source version -o json | ConvertFrom-Json)
+$azVersion = [string]$azVersionData.'azure-cli'
+$previousPreference = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+$sshVersion = (& $ssh.Source -V 2>&1 | Select-Object -First 1).ToString()
+$ErrorActionPreference = $previousPreference
+$ssmsVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($ssms).ProductVersion
+Write-Host "PowerShell $($PSVersionTable.PSVersion); Azure CLI $azVersion; $sshVersion; SSMS $ssmsVersion"
+if ([version]$azVersion -lt [version]'2.60.0') { throw 'Actualiza Azure CLI a 2.60.0 o posterior.' }
+if ($sshVersion -notmatch 'OpenSSH_for_Windows_') { throw 'Se requiere Windows OpenSSH Client.' }
+if ([version]($ssmsVersion -replace '[^0-9.].*$','') -lt [version]'20.0') { throw 'Actualiza SSMS a 20 o posterior.' }
+
+$repoUrl = 'https://github.com/JBranez/red-solidaria/archive/refs/heads/main.zip'
+$work = Join-Path $env:LOCALAPPDATA ('RedSolidaria-Connect-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+$zip = Join-Path $env:TEMP ('red-solidaria-' + [guid]::NewGuid().ToString('N') + '.zip')
+New-Item -ItemType Directory -Path $work -Force | Out-Null
+try {
+    Invoke-WebRequest -Uri $repoUrl -OutFile $zip
+    Expand-Archive -LiteralPath $zip -DestinationPath $work -Force
+} finally {
+    Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue
+}
+$repo = Join-Path $work 'red-solidaria-main'
+$connector = Join-Path $repo 'scripts\Connect-RedSolidaria-SSMS.ps1'
+if (!(Test-Path -LiteralPath $connector)) { throw 'El ZIP descargado no contiene el conector esperado.' }
+Unblock-File -LiteralPath $connector
+Write-Host "Código extraído en: $repo"
+$localPort = 14333
+while (Get-NetTCPConnection -LocalPort $localPort -State Listen -ErrorAction SilentlyContinue) { $localPort++ }
+Write-Host "Usaré el puerto local $localPort para el túnel SSH."
+& $connector -LocalPort $localPort
+```
+
+El script crea la llave privada solo en el perfil de esa PC (`$HOME\.ssh\redsolidaria_university`), registra en la VM únicamente la parte pública, obtiene la llave de host mediante Azure Run Command, valida su formato y huella localmente, y autoriza SSH desde la IP pública actual `/32`. Mantén abierta la sesión de SSMS y no cierres el proceso del túnel. SSMS pedirá la contraseña SQL; escríbela directamente allí. No publiques la llave privada ni contraseñas.

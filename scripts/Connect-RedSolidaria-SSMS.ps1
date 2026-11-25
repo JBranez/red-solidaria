@@ -31,10 +31,22 @@ function Invoke-AzChecked {
 $az = Get-Command az -ErrorAction SilentlyContinue
 $ssh = Get-Command ssh.exe -ErrorAction SilentlyContinue
 $keygen = Get-Command ssh-keygen.exe -ErrorAction SilentlyContinue
-$keyscan = Get-Command ssh-keyscan.exe -ErrorAction SilentlyContinue
-if (!$az -or !$ssh -or !$keygen -or !$keyscan) {
+if (!$az -or !$ssh -or !$keygen) {
     throw 'Instala Azure CLI y Windows OpenSSH Client antes de ejecutar este script.'
 }
+$azVersionData = (& az version -o json 2>$null | ConvertFrom-Json)
+$azVersion = [string]$azVersionData.'azure-cli'
+if ($LASTEXITCODE -ne 0 -or [version]$azVersion -lt [version]'2.60.0') {
+    throw "Azure CLI 2.60.0 o posterior es requerido; detectado: $azVersion"
+}
+$previousPreference = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+$sshVersionText = (& $ssh.Source -V 2>&1 | Select-Object -First 1).ToString()
+$ErrorActionPreference = $previousPreference
+if ($sshVersionText -notmatch 'OpenSSH_for_Windows_(\d+\.\d+)') {
+    throw "No pude validar la versión de Windows OpenSSH Client: $sshVersionText"
+}
+Write-Host "Azure CLI $azVersion; $sshVersionText"
 
 $ssmsCandidates = @(
     "$env:ProgramFiles\Microsoft SQL Server Management Studio 22\Release\Common7\IDE\SSMS.exe",
@@ -43,6 +55,11 @@ $ssmsCandidates = @(
 )
 $ssms = $ssmsCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 if (!$ssms) { throw 'No encuentro SSMS instalado. Instala SSMS desde Microsoft y vuelve a ejecutar.' }
+$ssmsVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($ssms).ProductVersion
+if ([version]($ssmsVersion -replace '[^0-9.].*$','') -lt [version]'20.0') {
+    throw "Se requiere SSMS 20 o posterior; detectado: $ssmsVersion"
+}
+Write-Host "SSMS $ssmsVersion"
 
 $accountText = & az account show -o json 2>$null
 if ($LASTEXITCODE -ne 0) {
@@ -61,7 +78,7 @@ $sshDir = Join-Path $HOME '.ssh'
 New-Item -ItemType Directory -Force -Path $sshDir | Out-Null
 $keyPath = Join-Path $sshDir 'redsolidaria_university'
 if (!(Test-Path -LiteralPath $keyPath)) {
-    & $keygen.Source -q -t ed25519 -N '' -C "redsolidaria-$(Get-Date -Format yyyyMMdd)" -f $keyPath
+    & $keygen.Source -q -t ed25519 -N '""' -C "redsolidaria-$(Get-Date -Format yyyyMMdd)" -f $keyPath
     if ($LASTEXITCODE -ne 0) { throw 'No se pudo generar la llave SSH local.' }
 }
 $publicKey = (Get-Content -LiteralPath "$keyPath.pub" -Raw).Trim()
@@ -71,40 +88,53 @@ Write-Host "Autorizando temporalmente SSH desde $cidr en el NSG..."
 Invoke-AzChecked @('network','nsg','rule','update','--resource-group',$ResourceGroup,'--nsg-name',$NsgName,'--name',$NsgRuleName,'--source-address-prefixes',$cidr,'--output','none') | Out-Null
 
 # Azure Run Command transporta solo la llave PÚBLICA y cambia UFW a la IP
-# actual. La huella SSH se compara contra Azure Resource Manager antes de usarla.
+# actual. La llave de host obtenida mediante Azure Resource Manager se valida
+# localmente antes de escribirla en known_hosts.
 $pub64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($publicKey))
-$remoteScript = @"
-set -eu
-PUB=`$(printf '%s' '$pub64' | base64 -d)
-install -d -m 700 -o $SshUser -g $SshUser /home/$SshUser/.ssh
-touch /home/$SshUser/.ssh/authorized_keys
-chmod 600 /home/$SshUser/.ssh/authorized_keys
-grep -qxF "`$PUB" /home/$SshUser/.ssh/authorized_keys || printf '%s\n' "`$PUB" >> /home/$SshUser/.ssh/authorized_keys
-chown ${SshUser}:${SshUser} /home/$SshUser/.ssh/authorized_keys
-ufw allow from $ip to any port 22 proto tcp
-ufw --force delete allow 22/tcp >/dev/null 2>&1 || true
-ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub | awk '{print "HOSTKEY_FINGERPRINT="`$2}'
-"@
+$keyBlob = ($publicKey -split '\s+')[1]
+$remoteScript = @(
+    'set -eu',
+    "install -d -m 700 -o $SshUser -g $SshUser /home/$SshUser/.ssh",
+    "touch /home/$SshUser/.ssh/authorized_keys",
+    "chmod 600 /home/$SshUser/.ssh/authorized_keys",
+    "grep -Fv '$keyBlob' /home/$SshUser/.ssh/authorized_keys > /home/$SshUser/.ssh/authorized_keys.redsolidaria-tmp || true",
+    "printf '%s' '$pub64' | base64 -d >> /home/$SshUser/.ssh/authorized_keys.redsolidaria-tmp",
+    "printf '\n' >> /home/$SshUser/.ssh/authorized_keys.redsolidaria-tmp",
+    "mv /home/$SshUser/.ssh/authorized_keys.redsolidaria-tmp /home/$SshUser/.ssh/authorized_keys",
+    "chmod 600 /home/$SshUser/.ssh/authorized_keys",
+    "chown ${SshUser}:${SshUser} /home/$SshUser/.ssh/authorized_keys",
+    "ufw allow from $ip to any port 22 proto tcp",
+    'ufw --force delete allow 22/tcp >/dev/null 2>&1 || true',
+    'cat /etc/ssh/ssh_host_ed25519_key.pub'
+) -join '; '
 $runResult = Invoke-AzChecked @('vm','run-command','invoke','--resource-group',$ResourceGroup,'--name',$VmName,'--command-id','RunShellScript','--scripts',$remoteScript,'--output','json')
 $runJson = $runResult | ConvertFrom-Json
 $message = ($runJson.value | ForEach-Object message) -join "`n"
-$fingerprintMatch = [regex]::Match($message,'HOSTKEY_FINGERPRINT=(SHA256:[A-Za-z0-9+/]+)')
-if (!$fingerprintMatch.Success) { throw "Azure Run Command no devolvió la huella SSH esperada: $message" }
-$trustedFingerprint = $fingerprintMatch.Groups[1].Value
-
-$scan = & $keyscan.Source -T 8 -t ed25519 $HostName 2>$null
-if ($LASTEXITCODE -ne 0 -or !$scan) { throw "No pude obtener la llave SSH del host $HostName." }
-$scanFile = Join-Path $env:TEMP ("rs-hostkey-" + [guid]::NewGuid().ToString('N'))
+$hostKeyMatch = [regex]::Match($message,'(?m)^ssh-ed25519\s+[A-Za-z0-9+/]+={0,2}(?:\s+[^\r\n]*)?$')
+if (!$hostKeyMatch.Success) { throw "Azure Run Command no devolvió una llave de host Ed25519 válida: $message" }
+$hostKeyLine = $hostKeyMatch.Value.Trim()
+$hostKeyFile = Join-Path $env:TEMP ("rs-hostkey-" + [guid]::NewGuid().ToString('N'))
 try {
-    $scan | Set-Content -LiteralPath $scanFile -Encoding ascii
-    $scanFingerprint = (& $keygen.Source -lf $scanFile 2>$null | Select-Object -First 1) -split '\s+' | Select-Object -Index 1
-} finally { Remove-Item -LiteralPath $scanFile -Force -ErrorAction SilentlyContinue }
-if ($scanFingerprint -ne $trustedFingerprint) {
-    throw "La huella SSH recibida ($scanFingerprint) no coincide con Azure ($trustedFingerprint). No se abrirá el túnel."
+    $hostKeyLine | Set-Content -LiteralPath $hostKeyFile -Encoding ascii
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    $fingerprintOutput = @(& $keygen.Source -lf $hostKeyFile 2>&1)
+    $keygenExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $previousPreference
+    if ($keygenExitCode -ne 0 -or $fingerprintOutput.Count -eq 0) {
+        throw "La llave de host recibida de Azure no es válida (ssh-keygen exit $keygenExitCode): $($fingerprintOutput -join ' ')."
+    }
+    $fingerprintParts = ([string]$fingerprintOutput[0] -split '\s+')
+    if ($fingerprintParts.Count -lt 2) { throw "ssh-keygen devolvió una respuesta inesperada: $($fingerprintOutput -join ' ')" }
+    $trustedFingerprint = $fingerprintParts[1]
+} finally { Remove-Item -LiteralPath $hostKeyFile -Force -ErrorAction SilentlyContinue }
+if ([string]::IsNullOrWhiteSpace($trustedFingerprint) -or $trustedFingerprint -notmatch '^SHA256:') {
+    throw "La huella SSH recibida de Azure no tiene el formato esperado: $trustedFingerprint"
 }
 
 $knownHosts = Join-Path $sshDir 'redsolidaria_known_hosts'
-$scan | Set-Content -LiteralPath $knownHosts -Encoding ascii
+"$HostName $hostKeyLine" | Set-Content -LiteralPath $knownHosts -Encoding ascii
+Write-Host "Huella del servidor obtenida por Azure: $trustedFingerprint"
 $existing = Get-NetTCPConnection -LocalPort $LocalPort -State Listen -ErrorAction SilentlyContinue
 if ($existing) { throw "El puerto local $LocalPort ya está ocupado. Cierra el túnel existente o elige otro puerto." }
 
