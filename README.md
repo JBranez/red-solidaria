@@ -67,3 +67,21 @@ Si `.git/redsolidaria-publish-state.json` falta, `scripts/Repair-RedSolidariaPub
 - Angular, FastAPI, SQL Server 2022 y Caddy estan activos en Docker Compose. HTTPS validado con TLS publico.
 - Verificados desde fuera: frontend 200, `/health/db` 200, login 200 y TCP/1433 cerrado.
 - Revisar [PROGRESS.md](../PROGRESS.md), [NEXT_STEPS.md](../NEXT_STEPS.md) y [DESPLIEGUE_AZURE_FOR_STUDENTS.md](DESPLIEGUE_AZURE_FOR_STUDENTS.md) para estado y operacion.
+
+## Conectar desde otra PC a SQL Server por SSMS
+
+En una computadora universitaria nueva, instala Windows OpenSSH Client, Azure CLI y SSMS. Inicia sesion en Azure con la cuenta que administra la VM y ejecuta desde PowerShell, dentro de una copia del repositorio:
+
+```powershell
+.\scripts\Connect-RedSolidaria-SSMS.ps1
+```
+
+El script:
+
+1. Verifica Azure CLI y SSMS; si Azure CLI no tiene sesion, abre el inicio de sesion interactivo para completar MFA.
+2. Obtiene la IP publica actual y limita a esa IP `/32` la regla SSH del NSG y UFW.
+3. Crea en esa PC una llave SSH ed25519 local (si no existe) y registra solo la llave publica en Ubuntu mediante Azure Run Command.
+4. Comprueba la huella SSH obtenida por Azure antes de aceptar el servidor.
+5. Abre el tunel `127.0.0.1:14333` hacia el puerto SQL privado de la VM y lanza SSMS con `RedSolidaria` y `sa` preseleccionados. Escribe la contrasena SQL en SSMS; el script no la solicita ni la almacena.
+
+No compartas ni subas la llave privada `$HOME\.ssh\redsolidaria_university` al repositorio. La llave publica de esa PC permanece autorizada en la VM para futuras conexiones desde esa computadora. Manten abierto el tunel mientras uses SSMS. El script cambia el origen autorizado de SSH a la IP actual; SQL Server 1433 sigue cerrado al publico.
